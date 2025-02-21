@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>Fuga nas Cavernas - O Chamado das Estrelas</title>
+  <!-- Fonte e estilos -->
+  <link rel="preconnect" href="https://fonts.gstatic.com">
+  <link href="https://fonts.googleapis.com/css2?family=Source+Code+Pro:wght@400;700&display=swap" rel="stylesheet">
+
+  <style>
+    /* Reset básico */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    /* Configurações gerais de fonte e cor */
+    body {
+      font-family: 'Source Code Pro', monospace;
+      /* Imagem de fundo fixa e centralizada */
+      background: url("cave_background_converted.jpg") no-repeat center center fixed;
+      background-size: cover; /* Ajusta a imagem para cobrir toda a área */
+      color: #fff;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    /* Container principal semitransparente para destacar o texto */
+    .container {
+      background: rgba(0, 0, 0, 0.7);
+      color: #fff;
+      width: 100%;
+      max-width: 700px;
+      border-radius: 8px;
+      box-shadow: 0 6px 16px rgba(0, 0, 0, 0.5);
+      padding: 30px;
+    }
+
+    /* Título com cor de destaque */
+    h1 {
+      font-size: 1.8em;
+      text-align: center;
+      margin-bottom: 15px;
+      color: #ffdd57;
+    }
+
+    /* Texto padrão */
+    p {
+      font-size: 1em;
+      line-height: 1.6;
+      margin: 15px 0;
+      text-align: justify;
+    }
+
+    /* Botões */
+    button {
+      display: block;
+      width: 100%;
+      margin: 10px 0;
+      padding: 12px;
+      font-size: 1em;
+      border: none;
+      border-radius: 5px;
+      background: #5563DE;
+      color: #fff;
+      cursor: pointer;
+      transition: background 0.3s ease;
+    }
+    button:hover {
+      background: #3f4ac8;
+    }
+
+    /* Área de log estilo “terminal” */
+    #log {
+      background: #001a00;
+      color: #0f0;
+      padding: 15px;
+      height: 200px;
+      overflow-y: auto;
+      border-radius: 5px;
+      border: 1px solid #0f0;
+      margin-top: 15px;
+      font-size: 0.95em;
+      white-space: pre-wrap;
+    }
+
+    /* Status e resultado */
+    #status {
+      margin-top: 15px;
+      font-weight: bold;
+      text-align: center;
+    }
+    #resultSection {
+      margin-top: 20px;
+      display: none;
+      text-align: center;
+    }
+    #resultSection p {
+      margin: 10px 0;
+    }
+
+    /* Destaque de texto */
+    .highlight {
+      color: #5563DE;
+      font-weight: bold;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+    <h1>Fuga nas Cavernas </h1>
+  <!-- Botão para iniciar a música -->
+  <button id="startMusicBtn">🎵 Iniciar Música</button>
+
+  <p>
+    Você é <strong>Leon</strong>, um cristão devoto que se vê preso em um vasto sistema de cavernas após nocautear Noah. 
+    Agora, precisa usar sua lógica, conhecimentos em informática e os dados do smartphone para encontrar a única rota de saída.
+  </p>
+  <p>
+    Selecione as ações abaixo para analisar o ambiente, consultar o celular e escolher seu caminho. 
+    Apenas um caminho levará à fuga, conforme as descobertas que você fizer.
+  </p>
+
+<button id="btnAnalyzeCorridors">Analisar Corredores</button>
+<button id="btnCheckPhone">Checar Smartphone</button>
+<button id="btnSolvePuzzle">Resolver Enigma (Dados de Satélite)</button>
+<button id="btnChoosePath">Escolher Rota</button>
+
+<div id="status"></div>
+<div id="log"></div>
+
+<div id="resultSection">
+  <p id="finalText"></p>
+  <button id="restartBtn" onclick="location.reload()">Reiniciar</button>
+</div>
+</div>
+
+<!-- Áudio da música -->
+<audio id="bgMusic" src="risk-136788.mp3" loop></audio>
+
+<script>
+  // Estado do jogo
+  let corridorsAnalyzed = false;
+  let phoneChecked = false;
+  let puzzleSolved = false;
+  let corridorChoice = false;
+
+  // Referências aos elementos do DOM
+  const logDiv        = document.getElementById('log');
+  const statusDiv     = document.getElementById('status');
+  const resultSection = document.getElementById('resultSection');
+  const finalText     = document.getElementById('finalText');
+
+  const startMusicBtn        = document.getElementById('startMusicBtn');
+  const btnAnalyzeCorridors  = document.getElementById('btnAnalyzeCorridors');
+  const btnCheckPhone        = document.getElementById('btnCheckPhone');
+  const btnSolvePuzzle       = document.getElementById('btnSolvePuzzle');
+  const btnChoosePath        = document.getElementById('btnChoosePath');
+  const bgMusic              = document.getElementById('bgMusic');
+
+  // Eventos de clique
+  startMusicBtn.addEventListener('click', startMusic);
+  btnAnalyzeCorridors.addEventListener('click', analyzeCorridors);
+  btnCheckPhone.addEventListener('click', checkPhone);
+  btnSolvePuzzle.addEventListener('click', solvePuzzle);
+  btnChoosePath.addEventListener('click', choosePath);
+
+  // Inicia a música com clique do usuário (evitando bloqueio de autoplay)
+  function startMusic() {
+    bgMusic.volume = 0.4;
+    bgMusic.play().catch(err => {
+      appendLog('🔇 Não foi possível iniciar a música automaticamente: ' + err);
+    });
+    startMusicBtn.style.display = 'none';
+    appendLog('🎵 Música iniciada. O ambiente se torna ainda mais tenso...');
+  }
+
+  // Adiciona texto ao log e rola para o final
+  function appendLog(text) {
+    logDiv.textContent += text + '\n';
+    logDiv.scrollTop = logDiv.scrollHeight;
+  }
+
+  function analyzeCorridors() {
+    if (!corridorsAnalyzed) {
+      appendLog('Você ergue a tocha e estuda atentamente a área, reconhecendo quatro corredores:');
+      appendLog('- Corredor A: desce gradualmente, com gotejamento intenso (possível presença de água).');
+      appendLog('- Corredor B: um leve vento circula, mas o cheiro de mofo permeia; paredes calcárias rachadas.');
+      appendLog('- Corredor C: obstruído parcialmente por pedras, porém o som de ar atrás delas sugere passagem.');
+      appendLog('- Corredor D: amplo e relativamente seco, com uma brisa morna vinda do interior.');
+      corridorsAnalyzed = true;
+      statusDiv.textContent = 'Observação dos corredores concluída.';
+    } else {
+      appendLog('Você já analisou os corredores. Nada novo no momento.');
+    }
+  }
+
+  function checkPhone() {
+    if (!corridorsAnalyzed) {
+      appendLog('É melhor inspecionar o ambiente antes de usar o celular.');
+      statusDiv.textContent = 'Ação bloqueada: analise o local primeiro.';
+      return;
+    }
+    if (!phoneChecked) {
+      appendLog('Você desbloqueia o smartphone de Noah e inicia a triangulação via satélite...');
+      appendLog('Informações obtidas:');
+      appendLog('- Área situada em um maciço rochoso, distante da floresta original.');
+      appendLog('- Indícios de rios subterrâneos ao leste; formação calcária indicando possíveis colapsos.');
+      appendLog('- Apenas UMA saída conhecida na superfície, ao norte. A coordenada final requer resolver uma equação.');
+      phoneChecked = true;
+      statusDiv.textContent = 'Celular verificado com sucesso.';
+    } else {
+      appendLog('Você já verificou o celular anteriormente, sem novos dados.');
+    }
+  }
+
+  function solvePuzzle() {
+    if (!corridorsAnalyzed || !phoneChecked) {
+      appendLog('Você precisa analisar os corredores e verificar o celular antes de resolver o enigma.');
+      statusDiv.textContent = 'Ação bloqueada: conclua as etapas anteriores.';
+      return;
+    }
+    if (!puzzleSolved) {
+      appendLog(
+        'Você cruza as informações de topografia e satélite para descobrir o valor de X que leva à saída.\n\n' +
+        'Enigma:\n( X - 2.3 ) = 4.7\n' +
+        'Calcule X e insira o resultado exato para confirmar a rota correta:'
+      );
+      const puzzleAnswer = prompt('Enigma:( X - 2.3 ) = 4.7 \nCalcule X e insira o resultado exato para confirmar a rota correta');
+        
+
+      if (puzzleAnswer) {
+        const num = parseFloat(puzzleAnswer.trim());
+        // (X - 2.3) = 4.7 => X = 4.7 + 2.3 => 7.0
+        if (Math.abs(num - 7.0) < 0.0001) {
+          appendLog('Enigma solucionado: X = 7.0. Indica que o corredor elevado e seco (D) leva à saída ao norte.');
+          puzzleSolved = true;
+          statusDiv.textContent = 'Enigma resolvido. O corredor D parece ser a rota de fuga.';
+        } else {
+          appendLog('Resposta incorreta. Você não conseguiu definir o corredor certo. Tente novamente.');
+        }
+      } else {
+        appendLog('Você hesitou e não digitou nenhuma resposta.');
+      }
+    } else {
+      appendLog('O enigma já foi resolvido. Você sabe que o corredor D é o caminho para a saída.');
+    }
+  }
+
+  function choosePath() {
+    if (!corridorsAnalyzed) {
+      appendLog('Analise o ambiente antes de tomar uma decisão.');
+      statusDiv.textContent = 'Ação bloqueada: examine o local.';
+      return;
+    }
+    if (!phoneChecked) {
+      appendLog('Verifique o celular antes de escolher sua rota.');
+      statusDiv.textContent = 'Ação bloqueada: usar o celular primeiro.';
+      return;
+    }
+    if (!puzzleSolved) {
+      appendLog('Você deve resolver o enigma para identificar o corredor certo para escapar.');
+      statusDiv.textContent = 'Ação bloqueada: resolva o enigma.';
+      return;
+    }
+    if (corridorChoice) {
+      appendLog('Você já fez sua escolha anteriormente.');
+      return;
+    }
+
+    const choice = prompt('Escolha A, B, C ou D (digite a letra do corredor):', 'A/B/C/D');
+    if (!choice) {
+      appendLog('Você hesitou e não selecionou nenhuma opção.');
+      return;
+    }
+
+    corridorChoice = true;
+    const uppercaseChoice = choice.trim().toUpperCase();
+
+    switch (uppercaseChoice) {
+      case 'A':
+        appendLog('Leon segue pelo Corredor A, onde um gotejamento indica um curso de água abaixo...');
+        endGame('Infelizmente, você atinge um labirinto alagado, sem saída clara. Fica preso nesse local.');
+        break;
+      case 'B':
+        appendLog('Leon avança pelo Corredor B. O ar mofado e paredes rachadas sugerem risco de desabamento...');
+        endGame('Após explorar, encontra um beco sem saída. A fuga não ocorre por aqui.');
+        break;
+      case 'C':
+        appendLog('Leon investe no Corredor C, removendo algumas pedras. O som de ar sugeria esperança...');
+        endGame('Atrás da barreira, há uma câmara misteriosa mas sem saída para a superfície. Você fica encurralado.');
+        break;
+      case 'D':
+        appendLog('Você escolhe o Corredor D, seco e com uma brisa morna. Comparado a X=7.0, parece ser o caminho elevado ao norte.');
+        endGame('Uma longa caminhada revela feixes de luz e, finalmente, sua fuga para a superfície. Parabéns!');
+        break;
+      default:
+        appendLog('Opção inválida. Você hesitou e não escolheu corretamente.');
+        corridorChoice = false; // Permite nova tentativa
+    }
+  }
+
+  function endGame(message) {
+    statusDiv.textContent = 'Decisão final tomada.';
+    resultSection.style.display = 'block';
+    finalText.textContent = message;
+    // Desabilitar botões para impedir novas ações
+    btnAnalyzeCorridors.disabled = true;
+    btnCheckPhone.disabled = true;
+    btnSolvePuzzle.disabled = true;
+    btnChoosePath.disabled = true;
+  }
+</script>
+
